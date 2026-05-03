@@ -438,6 +438,206 @@ Langkah pertama adalah membuat file untuk server yaitu `orion.c` dan client yait
 $ touch orion.c eternal.c arena.h"
 ```
 
+A. File Server
+1. Program mendefinisikan struktur data user dan message queue yang diminta.
+```
+typedef struct {
+    char username[50];
+    char password[50];
+    int login;
+    int gold;
+    int lvl;
+    int xp;
+    int weapon;
+} Users;
+```
+Struktur Users ini digunakan untuk menyimpan data setiap user, meliputi username, password, status login, jumlah gold, level, XP, dan senjata yang digunakan nantinya.
+
+Kemudian, terdaoat struktur untuk mengirim pesan ke message queue untuk logging.
+```
+typedef struct {
+    long msg_type;
+    char msg_text[MAX_SIZE];
+} MsgBuffer;
+```
+
+Di sini, program juga menggunakan shared memory untuk menyimpan data dari user.
+```
+Users *users;
+int *user_count;
+```
+Program menggunakan shared memory agar data user tetap tersimpan meskipun server berjalan terus atau digunakan di banyak proses.
+`users` menunjuk ke array data user, sedangkan `user_count` berarti jumlah user yang terdaftar.
+
+2. Selanjutnya terdapat fungsi untuk mencatat aktivitas menggunakan message queue.
+```
+void log_event(const char *text) {
+    MsgBuffer msg;
+    msg.msg_type = 99;
+    strcpy(msg.msg_text, text);
+    msgsnd(msgid, &msg, sizeof(msg.msg_text), 0);
+}
+```
+Fungsi `log_event()` ini digunakan untuk mencatat aktivitas, contohnya seperti registrasi user.
+
+Kemudian, fungsi ini sendiri nanti akan berguna untuk cek kesamaan nama.
+```
+int find_user(char *name) {
+    for (int i = 0; i < *user_count; i++) {
+        if (strcmp(users[i].username, name) == 0)
+            return i;
+    }
+    return -1;
+}
+```
+Fungsi find_user() digunakan untuk mencari user berdasarkan username. Jika ditemukan, fungsi mengembalikan index user, jika tidak ditemukan maka mengembalikan -1.
+
+Implementasi dari fungsinya yaitu untuk mengecek ketersediaan username:
+```
+int name_check(char *name) {
+    return find_user(name) == -1;
+}
+```
+Fungsi ini digunakan saat registrasi untuk memastikan bahwa username belum digunakan oleh user lain.
+
+3. Fungsi untuk menampilkan menu utama game (Eterion)
+```
+void pilihan(int sock, Users *u) {
+    while (1) {
+        char msg[BUFFER_SIZE];
+
+        sprintf(msg,
+            "\n====== BATTLE OF ETERION ======\n"
+            "Name : %s\n"
+            "Lvl  : %d\n"
+            "Gold : %d\n"
+            "XP   : %d\n"
+            "\n1. Battle\n"
+            "2. Armory\n"
+            "3. History\n"
+            "4. Logout\n",
+            u->username, u->lvl, u->gold, u->xp);
+
+        send(sock, msg, strlen(msg), 0);
+```
+Pada kode di atas, fungsi tersebut digunakan untuk menampilkan menu utama Eterion ke client. Informasi seperti nama, level, gold, dan XP akan ditampilkan kepada user.
+
+4. Program kemudian membaca pilihan user di dunia Eterion
+```
+char choice[10] = {0};
+read(sock, choice, sizeof(choice));
+
+int c = atoi(choice);
+```
+Server menerima input dari client berupa pilihan menu, kemudian mengubahnya menjadi integer menggunakan `atoi`.
+
+5. Program menjalankan setiap pilihan sesuai yang diinput oleh user.
+```
+if (c == 1) battle_menu(sock, u);
+else if (c == 2) armory(sock, u);
+else if (c == 3) history(sock);
+else if (c == 4) {
+    u->login = 0;
+    break;
+}
+```
+Jika logout, status login user diubah menjadi 0 dan keluar dari loop.
+
+6. Program menginisialisasi socket, shared memory dan message queue
+```
+int shmid_users = shmget(SHM_KEY_USERS, sizeof(Users) * MAX_USERS, 0666 | IPC_CREAT);
+int shmid_count = shmget(SHM_KEY_COUNT, sizeof(int), 0666 | IPC_CREAT);
+
+users = shmat(shmid_users, NULL, 0);
+user_count = shmat(shmid_count, NULL, 0);
+
+msgid = msgget(MSG_KEY, 0666 | IPC_CREAT);
+server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+int opt = 1;
+setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+
+address.sin_family = AF_INET;
+address.sin_addr.s_addr = INADDR_ANY;
+address.sin_port = htons(PORT);
+
+bind(server_fd, (struct sockaddr *)&address, sizeof(address));
+listen(server_fd, 10);
+```
+Server membuat socket TCP, mengatur opsi agar port bisa digunakan kembali, lalu melakukan binding ke alamat dan port. Setelah itu server mulai menerima koneksi dari client (`listen`).
+
+7. Server menerima koneksi dari client
+```
+new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+```
+Server menerima koneksi dari client menggunakan accept(). Setiap client yang terhubung akan mendapatkan socket baru (new_socket).
+
+```
+char buffer[BUFFER_SIZE] = {0};
+read(new_socket, buffer, BUFFER_SIZE);
+```
+Pada kode di atas, server membaca data yang dikirim oleh client yaitu perintah login atau register.
+
+8. Server memproses pilihan user yaitu "Register" (pilihan 1)
+```
+if (strncmp(buffer, "REGISTER", 8) == 0) {
+    char user[50], pass[50];
+    sscanf(buffer, "REGISTER:%[^:]:%s", user, pass);
+```
+Server mengecek apakah request adalah register. Jika iya, username dan password diambil dari string menggunakan sscanf.
+
+9. Setelah melakukan proses register, maka server akan menyimpan data user tersebut.
+```
+if (!name_check(user)) {
+    send(new_socket, "Username already exists", 23, 0);
+} else {
+    strcpy(users[*user_count].username, user);
+    strcpy(users[*user_count].password, pass);
+    users[*user_count].login = 0;
+    users[*user_count].gold = 150;
+    users[*user_count].lvl = 1;
+    users[*user_count].xp = 0;
+    users[*user_count].weapon = 0;
+
+    (*user_count)++;
+```
+Jika username belum digunakan, server akan menyimpan data user baru dengan nilai default seperti gold, level, dan XP.
+
+Kemudian, server mengirim respon register dan mencatat log:
+```
+send(new_socket, "Account created!", 16, 0);
+
+char logmsg[100];
+sprintf(logmsg, "%s registered", user);
+log_event(logmsg);
+```
+Server mengirim pesan bahwa akunnya sudah berhasil dibuaat ke client dan mencatat aktivitas registrasi ke message queue.
+
+10. Jika pilihan user adalah untuk login (pilihan 2).
+```
+else if (strncmp(buffer, "LOGIN", 5) == 0) {
+    char user[50], pass[50];
+    sscanf(buffer, "LOGIN:%[^:]:%s", user, pass);
+
+    int idx = find_user(user);
+```
+Server mengecek apakah yang diinput user adalah login, lalu mengambil username dan password.
+
+11. Di sini, server akan mengelola proses login.
+```
+if (idx != -1 && strcmp(users[idx].password, pass) == 0) {
+    users[idx].login = 1;
+
+    send(new_socket, "Welcome", 8, 0);
+    pilihan(new_socket, &users[idx]);
+} else {
+    send(new_socket, "Login failed", 12, 0);
+}
+sloce(socket);
+```
+Jika usernamenya ditemukan dan password sesuai, maka login berhasil. Server akan mengeluarkan output "Welcome" dan memanggil fungsi pilihan() untuk memulai gamenya. Jika gagal, server mengirim pesan error.
+
+B. File Client
 1. Menu
 ```
 #include <stdio.h>
@@ -491,3 +691,203 @@ void pilihanEterion(int sock) {
         printf("%s", buffer);
         fflush(stdout);
 ```
+
+3. Program membaca pesan dari server dengan perulangan loop.
+```
+while (1) {
+    memset(buffer, 0, sizeof(buffer));
+
+    int n = read(sock, buffer, sizeof(buffer) - 1);
+
+    if (n <= 0) {
+        printf("\nDisconnected from Orion.\n");
+        break;
+    }
+
+    printf("%s", buffer);
+    fflush(stdout);
+```
+Program menggunakan while loop untuk terus membaca pesan dari server. Fungsi read() sendiri digunakan untuk menerima data. Jika koneksi terputus (n <= 0), maka loop dihentikan. Semua pesan dari server langsung ditampilkan di terminal.
+
+4. Program memproses menu utama dunia Eterion
+if (strstr(buffer, "BATTLE OF ETERION")) {
+    printf("Choice: ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0;
+
+    send(sock, input, strlen(input), 0);
+
+    if (strcmp(input, "4") == 0)
+        break;
+
+    continue;
+}
+
+Pada kode di atas, jika pesan dari server terdapat "BATTLE OF ETERION", maka client mengetahui bahwa server sedang menampilkan menu utama, sehingga user diminta memasukkan pilihan menu, kemudian input dikirim ke server. Jika user memilih keluar yaitu opsi 4, maka loop akan dihentikan.
+
+5. Program memproses aksi battle
+```
+if (strstr(buffer, "(a) Attack")) {
+    printf("Action (a/u): ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0;
+
+    send(sock, input, strlen(input), 0);
+    continue;
+}
+```
+Jika client mendeteksi bahwa user sedang berada dalam battle of eterion, maka user diminta memilih action, yaitu attack atau ultimate. Input dari user tersebut kemudian dikirim ke server untuk diproses.
+
+6. Untuk Armory
+```
+	if (strstr(buffer, "=== Armory ===")) {
+    printf("Choose weapon: ");
+    fgets(input, sizeof(input), stdin);
+    input[strcspn(input, "\n")] = 0;
+
+    send(sock, input, strlen(input), 0);
+    continue;
+}
+```
+Ketika user berada di armory, client meminta user memilih senjata. Pilihan tersebut kemudian dikirim ke server untuk diproses pembeliannya atau penggunaan senjatanya.
+
+7. Fungsi untuk menghubungkan server dengan client.
+```
+int connect_server() {
+    int sock;
+    struct sockaddr_in serv_addr;
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+
+    inet_pton(AF_INET, IP, &serv_addr.sin_addr);
+
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        printf("Failed connect to Orion.\n");
+        exit(1);
+    }
+
+    return sock;
+}
+```
+Fungsi connect_server() digunakan untuk membuat koneksi ke server. Alamat server diatur menggunakan IP dan port yang sudah didefinisikan sebelumnya. Fungsi connect() digunakan untuk menghubungkan client ke server. Jika gagal, program akan dihentikan.
+
+8. Untuk menunjukkan menu, digunakan perulangan while loop sebagai berikut.
+
+```
+int main() {
+    while (1) {
+        char username[50];
+        char password[50];
+        char message[200];
+        char buffer[BUFFER_SIZE] = {0};
+
+        int choice;
+
+        menu();
+
+if (scanf("%d", &choice) != 1) {
+    while (getchar() != '\n');
+    continue;
+}
+
+while (getchar() != '\n');
+```
+Program membaca input user menggunakan scanf. Jika input tidak valid, buffer dibersihkan agar tidak terjadi error.
+
+9. Untuk pilihan pertama, program akan melakukan proses register user.
+```
+if (choice == 1) {
+    int sock = connect_server();
+
+    printf("\n=== CREATE ACCOUNT ===\n");
+
+    printf("Username: ");
+    fgets(username, sizeof(username), stdin);
+    username[strcspn(username, "\n")] = 0;
+
+    printf("Password: ");
+    fgets(password, sizeof(password), stdin);
+    password[strcspn(password, "\n")] = 0;
+```
+Jika user memilih register, program membuat koneksi ke server, lalu meminta username dan password dari user tersebut.
+
+10. Untuk menyimpan data user yang sudah melakukan register.
+```
+snprintf(message, sizeof(message),
+         "REGISTER:%s:%s",
+         username, password);
+
+send(sock, message, strlen(message), 0);
+
+read(sock, buffer, BUFFER_SIZE);
+```
+Data dikirim ke server dalam format seperti yang tertera kemudian client menunggu respon dari server.
+
+11. Setelah melakukan registrasi, maka program akan menampilkannya.
+```
+printf("\n%s\n\n", buffer);
+close(sock);
+```
+Respon dari server ditampilkan ke terminal usernya, lalu koneksi ditutup.
+
+12. Untuk pilihan 2, yaitu login pengguna.
+```
+else if (choice == 2) {
+    int sock = connect_server();
+
+    printf("\n=== LOGIN ===\n");
+
+    printf("Username: ");
+    fgets(username, sizeof(username), stdin);
+    username[strcspn(username, "\n")] = 0;
+
+    printf("Password: ");
+    fgets(password, sizeof(password), stdin);
+    password[strcspn(password, "\n")] = 0;
+```
+Ketika user memilih login, program akan membuat koneksi ke server dan meminta username serta password dari user tersebut. 
+
+Setelah itu, program akan mengirim data login ini ke terminal.
+```
+snprintf(message, sizeof(message),
+         "LOGIN:%s:%s",
+         username, password);
+
+send(sock, message, strlen(message), 0);
+
+memset(buffer, 0, BUFFER_SIZE);
+read(sock, buffer, BUFFER_SIZE);
+```
+Data login dikirim ke server, lalu client membaca respon dari server tersebut di terminal.
+
+Setelah itu, program akan mengeluarkan output:
+```
+if (strstr(buffer, "Welcome")) {
+    printf("\nLogin success!\n");
+    pilihanEterion(sock);
+} else {
+    printf("\n%s\n\n", buffer);
+}
+```
+Pada kode di atas, jika login berhasil, client pun masuk ke dunia Eterion. Jika gagal, program akan menampilkan pesan bahwa ia error.
+
+13. Untuk pilihan 3 adalah berhenti dari program.
+```
+else if (choice == 3) {
+    printf("\nSee you in another Battle of Eterion!\n");
+    break;
+}
+```
+Di sini, jika user memilih exit, program akan berhenti.
+
+Kemudian jika pilihan user adalah selain dari pilihan 1, 2, dan 3, maka program akan mengeluarkan output invalid.
+```
+else {
+    printf("Invalid choice.\n");
+}
+```
+
+### OUTPUT
