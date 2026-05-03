@@ -426,3 +426,45 @@ Untuk semua definisi yang dipakai pada file navi.c dan wired.c diletakkan di dal
 
 6. Pilihan ./exit
 <img width="470" height="91" alt="image" src="https://github.com/user-attachments/assets/85a9f27c-5309-4ee3-8e2a-3109c097cde2" />
+
+
+### Soal 2
+**The Battle of Eterion**
+
+#### Penjelasan
+
+Langkah pertama adalah membuat file untuk server yaitu `orion.c` dan client yaitu `eternal.c`. Untuk definisi berada di file `arena.h`.
+```bash
+$ touch mavi.c wired.c protocol.h"
+```
+
+1. Menu 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <string.h>
+
+#define BUFFER_SIZE 1024
+#define PORT 8080
+#define IP "127.0.0.1"
+
+void menu() {
+printf(" _____   __ _______ ____ _   ____    ___ ____\n");
+printf("|  _  \\ /  \\ _   _ |   __|| |  __|  / _ \\  __|\n");
+printf("| |_) |  /\\ \\ | |   | | | | | |__  | | | ||_\n");
+printf("|  _ <  /__\\ \\| |   | | | | |  __| | | | | _|\n");
+printf("| |_) | ____  \\ |   | | | |_|_|__  | |_| ||\n");
+printf("|_____//    \\__\\|   |_| |_____|__|  \\___/_|\n");
+printf(" ____ ______ ___ ___ ______ ___ __     _\n");
+printf("|  __|_   __| __| _ \\_   __| _ \\   \\  | |\n");
+printf("| |_   | | | |_| |_) || | | | | |   \\ | |\n");
+printf("|  _|  | | |  _|  _ < | | | | | | |\\ \\| |\n");
+printf("| |__  | | | |_| | \\ \\| |_| |_| | | \\   |\n");
+printf("|____| |_| |____||  \\_\\ ___|___/__|  \\__|\n");
+printf("\n");
+printf("1. Register\n");
+printf("2. Login\n");
+printf("3. Exit\n");
+printf("Choice: ");
+}
