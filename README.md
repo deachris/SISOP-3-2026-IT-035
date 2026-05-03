@@ -120,6 +120,7 @@ int client_count = 0;
 ```
 Pada kode di atas, server The Wired menyimpan semua user yang sudah login. Inisialisasi jumlah client dimulai dari 0. 
 
+
 2. Untuk mencatat semua aktivitas server ke file log `history.log`. Digunakan waktu saat ini dengan `localtime(&now)`.
 ```
 void log_history(char *role, char *message) {
@@ -135,6 +136,7 @@ void log_history(char *role, char *message) {
     fclose(f);
 }
 ```
+
 
 3. Fungsi Pengecekan Nama Unik
 ```
@@ -157,6 +159,7 @@ clients[client_count].admin = admin;
 client_count++;
 ```
 
+
 4. Untuk mengirim pesan-pesan ke semua client (broadcast), digunakna fungsi broadcast sebagai berikut.
 ```
 void broadcast(char *message, int client_index) {
@@ -167,6 +170,7 @@ void broadcast(char *message, int client_index) {
     }
 }
 ```
+
 
 5. Selajutnya adalah inisialisasi server dengan socket dan membuat socketnya itu sendiri.
 ```
@@ -193,6 +197,7 @@ log_history("System", "[SERVER ONLINE]");
 printf("Server running on port %d...\n", PORT);
 ```
 
+
 6. Untuk menjalankan server, digunakan perulangan while loop kemudian semua client yang ada dideteksi oleh server.
 ```
  while(1) {
@@ -213,6 +218,7 @@ printf("Server running on port %d...\n", PORT);
     if (FD_ISSET(server_fd, &readfds)) {
 	new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
 ```
+
 
 7. Untuk pengecekan nama yang unik menggunakan fungsi check_name.
 ```
@@ -235,6 +241,7 @@ char username[50];
 	}
     }
 ```
+
 
 8. Pengecekan user yang login adalah "The Knights" atau bukan adalah dengan mengecek usernamenya.
  ```
@@ -280,6 +287,7 @@ char *menu =
 
 Setelah berhasil masuk sebagai "The Knights", maka semacam menu khusus The Knights akan ditampilkan. 
 
+
 9. Server menyimpan informasi client yang baru terhubung ke dalam array. Data yang disimpan tersebut adalah socket, username, dan status dari The Knights.
 ```
 clients[client_count].socket = new_socket;
@@ -289,12 +297,14 @@ client_count++;
 ```
 Kode di atas adalah untuk mengelola seluruh client yang aktif.
 
+
 10. Setelah client berhasil terdaftar, server akan memberikan output sebagai tanda bahwa client telah berhasil masuk ke dalam sistem.
 ```
 char msg[200];
 sprintf(msg, "--- Welcome to The Wired, %s ---\n", username);
 send(new_socket, msg, strlen(msg), 0);
 ```
+
 
 11. Server mencatat aktivitas client yang baru terhubung ke dalam file log.
 ```
@@ -334,6 +344,7 @@ if (strcmp(buffer, "/exit") == 0) {
 }
 ```
 
+
 12. Jika client memiliki status The Knights, maka server akan memproses perintah khusus dan dimasukkan dalam log_history.
 ```
 if (clients[i].admin) {
@@ -349,6 +360,7 @@ if (clients[i].admin) {
         	}
 ```
 
+
 13. Untuk menampilkan uptime admin, server menghitung lama waktu berjalan sejak dijalankan.
 ```
 else if (strcmp(buffer, "2") == 0) {
@@ -358,6 +370,7 @@ else if (strcmp(buffer, "2") == 0) {
             	    send(sd, message, strlen(message), 0);
             	    continue;
 ```
+
 
 14. Untuk mematikan server sehingga berhenti beroperasi.
 ```
@@ -377,3 +390,21 @@ else if (strcmp(buffer, "3") == 0) {
             broadcast(message, i);
 ```
 Kode di atas juga menyimpan log pesan ke dalam file log dan selanjutnya server mengirim pesan dari client ke semua client yang lain dengan fungsi broadcast.
+
+Untuk semua definisi yang dipakai pada file navi.c dan wired.c diletakkan di dalam file protocol.h sebagai berikut.
+```
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
+#define PORT 8080
+#define MAX_CLIENTS 100
+
+#define ADMIN_NAME "The Knights"
+#define ADMIN_PASS "wired123"
+
+#define BUFFER_SIZE 1024
+
+#endif
+```
+
+### OUTPUT
