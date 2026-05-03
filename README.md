@@ -438,7 +438,8 @@ Langkah pertama adalah membuat file untuk server yaitu `orion.c` dan client yait
 $ touch mavi.c wired.c protocol.h"
 ```
 
-1. Menu 
+1. Menu
+```
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -468,3 +469,4 @@ printf("2. Login\n");
 printf("3. Exit\n");
 printf("Choice: ");
 }
+```
