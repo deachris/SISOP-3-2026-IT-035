@@ -435,7 +435,7 @@ Untuk semua definisi yang dipakai pada file navi.c dan wired.c diletakkan di dal
 
 Langkah pertama adalah membuat file untuk server yaitu `orion.c` dan client yaitu `eternal.c`. Untuk definisi berada di file `arena.h`.
 ```bash
-$ touch mavi.c wired.c protocol.h"
+$ touch orion.c eternal.c arena.h"
 ```
 
 1. Menu
@@ -469,4 +469,25 @@ printf("2. Login\n");
 printf("3. Exit\n");
 printf("Choice: ");
 }
+```
+
+2. Fungsi `pilihanEterion` untuk menu Battle of Eterion
+a. Untuk menerima data dari server dan menampilkannya ke user
+```
+void pilihanEterion(int sock) {
+    char buffer[BUFFER_SIZE];
+    char input[100];
+
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+
+        int n = read(sock, buffer, sizeof(buffer) - 1);
+
+        if (n <= 0) {
+            printf("\nDisconnected from Orion.\n");
+            break;
+        }
+
+        printf("%s", buffer);
+        fflush(stdout);
 ```
