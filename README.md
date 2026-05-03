@@ -438,7 +438,7 @@ Langkah pertama adalah membuat file untuk server yaitu `orion.c` dan client yait
 $ touch orion.c eternal.c arena.h"
 ```
 
-A. File Server
+A. File Server: `orion.c`
 1. Program mendefinisikan struktur data user dan message queue yang diminta.
 ```
 typedef struct {
@@ -637,7 +637,7 @@ sloce(socket);
 ```
 Jika usernamenya ditemukan dan password sesuai, maka login berhasil. Server akan mengeluarkan output "Welcome" dan memanggil fungsi pilihan() untuk memulai gamenya. Jika gagal, server mengirim pesan error.
 
-B. File Client
+B. File Client: `eternal.c`
 1. Menu
 ```
 #include <stdio.h>
@@ -710,6 +710,7 @@ while (1) {
 Program menggunakan while loop untuk terus membaca pesan dari server. Fungsi read() sendiri digunakan untuk menerima data. Jika koneksi terputus (n <= 0), maka loop dihentikan. Semua pesan dari server langsung ditampilkan di terminal.
 
 4. Program memproses menu utama dunia Eterion
+```
 if (strstr(buffer, "BATTLE OF ETERION")) {
     printf("Choice: ");
     fgets(input, sizeof(input), stdin);
@@ -722,10 +723,10 @@ if (strstr(buffer, "BATTLE OF ETERION")) {
 
     continue;
 }
-
+```
 Pada kode di atas, jika pesan dari server terdapat "BATTLE OF ETERION", maka client mengetahui bahwa server sedang menampilkan menu utama, sehingga user diminta memasukkan pilihan menu, kemudian input dikirim ke server. Jika user memilih keluar yaitu opsi 4, maka loop akan dihentikan.
 
-5. Program memproses aksi battle
+5. Pemrosesan program battle
 ```
 if (strstr(buffer, "(a) Attack")) {
     printf("Action (a/u): ");
@@ -831,7 +832,7 @@ Data dikirim ke server dalam format seperti yang tertera kemudian client menungg
 printf("\n%s\n\n", buffer);
 close(sock);
 ```
-Respon dari server ditampilkan ke terminal usernya, lalu koneksi ditutup.
+Respon dari server ditampilkan ke terminal usernya, lalu koneksinya akan ditutup.
 
 12. Untuk pilihan 2, yaitu login pengguna.
 ```
