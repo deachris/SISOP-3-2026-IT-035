@@ -892,4 +892,4 @@ else {
 ```
 
 ### OUTPUT
-Belum ada output karena tidak selesai.
+Belum ada output karena masih ada error.
