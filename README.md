@@ -408,3 +408,21 @@ Untuk semua definisi yang dipakai pada file navi.c dan wired.c diletakkan di dal
 ```
 
 ### OUTPUT
+1. Compile file navi.c dan wired.c, kemudian menjalankan wired
+<img width="897" height="177" alt="image" src="https://github.com/user-attachments/assets/990f7f50-a9b4-4f09-bb27-87a189d636ae" />
+
+2. Menjalankan navi
+<img width="803" height="126" alt="image" src="https://github.com/user-attachments/assets/772c4e92-0f51-4d1d-a2f6-236b84252409" />
+
+3. Menjalankan navi di terminal lain
+<img width="812" height="451" alt="image" src="https://github.com/user-attachments/assets/605e25ec-9aad-4d7d-8a04-a0c99c55e4c0" />
+
+4. Ketika satu user mengirim pesan, maka akan terlihat di terminal user lainnya
+<img width="817" height="569" alt="image" src="https://github.com/user-attachments/assets/1b75e935-ce3b-469b-88ff-973e2c6bb9d8" />
+<img width="811" height="647" alt="image" src="https://github.com/user-attachments/assets/7c3bbc4c-7b0a-4125-9331-3d884a6c4329" />
+
+5. Ketika masuk sebagai admin
+<img width="804" height="595" alt="image" src="https://github.com/user-attachments/assets/d3e34ad5-1801-430a-9092-aa35e7489ee8" />
+
+6. Pilihan ./exit
+<img width="470" height="91" alt="image" src="https://github.com/user-attachments/assets/85a9f27c-5309-4ee3-8e2a-3109c097cde2" />
